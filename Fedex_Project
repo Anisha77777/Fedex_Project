@@ -1,1 +1,1357 @@
 
+Code
+# Problem Statement
+​
+# The business problem is to optimize shipment scheduling and reduce delays by analyzing historical data on actual shipment times, planned shipment times, and delivery statuses for a specific carrier's routes between the source (IAD) and destination (TPA) in 2008.
+# The objective is to analyze the historical shipment data for a specific carrier's routes between IAD and TPA in 2008 in order to identify patterns, optimize scheduling, and minimize shipment delays, ultimately improving the carrier's delivery performance."
+​
+# CRISP-ML(Q) process model describes six phases:
+# 
+# 1. Business and Data Understanding
+# 2. Data Preparation
+# 3. Model Building
+# 4. Model Evaluation
+# 5. Model Deployment
+# 6. Monitoring and Maintenance
+# *Objective(s):Maximize Delivery Punctuality
+# *Constraints:*Minimize Resource and Operational Constraints
+​
+​
+# *Success Criteria*
+# 
+# - *Business Success Criteria*: Achieve on-time delivery and reduce delays for maximum customer satisfaction.
+#
+# - *ML Success Criteria*: Minimize shipment delays and improve on-time deliveries using machine learning.
+#
+# - *Economic Success Criteria*: "Minimize operational costs while maximizing on-time deliveries and customer satisfaction."
+#
+​
+# ## Data Collection
+​
+# Data: 
+#   The dataset contains information for 2008 on shipment times, carriers, delays, source, destination, distance, and delivery statuses for specific routes.
+​
+# Data Dictionary:
+# - Dataset contains 3604175 shipment record for a specific month in the year 2008.
+# - 15 features are recorded for specific attributes related to shipments in the year 2008.
+# 
+# Description:
+# Year: The year of the shipment (2008 in all records).
+# Month: The month of the shipment.
+# DayofMonth: The day of the month of the shipment.
+# DayOfWeek: The day of the week of the shipment.
+# Actual_Shipment_Time: The actual time of shipment in HHMM format (24-hour clock).
+# Planned_Shipment_Time: The planned or scheduled time of shipment in HHMM format.
+# Planned_Delivery_Time: The planned or scheduled time of delivery in HHMM format.
+# Carrier_Name: The name of the carrier company.
+# Carrier_Num: The carrier's identification number.
+# Planned_TimeofTravel: The planned time duration of travel in minutes.
+# Shipment_Delay: The delay in minutes (negative value indicates early arrival).
+# Source: The source or origin of the shipment.
+# Destination: The destination of the shipment.
+# Distance: The distance in miles between the source and destination.
+# Delivery_Status: The delivery status (0 indicates on time, 1 indicates delayed).
+​
+​
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+from sklearn.impute import SimpleImputer
+from feature_engine.outliers import Winsorizer
+import scipy.stats as stats
+import pylab
+from feature_engine import transformation
+r
+data = pd.read_csv(r"C:\Users\anish\Documents\fedex.csv")
+​
+data
+data
+Year	Month	DayofMonth	DayOfWeek	Actual_Shipment_Time	Planned_Shipment_Time	Planned_Delivery_Time	Carrier_Name	Carrier_Num	Planned_TimeofTravel	Shipment_Delay	Source	Destination	Distance	Delivery_Status
+0	2008	1	3	4	2003.0	1955	2225	WN	335	150.0	8.0	IAD	TPA	810	0.0
+1	2008	1	3	4	754.0	735	1000	WN	3231	145.0	19.0	IAD	TPA	810	1.0
+2	2008	1	3	4	628.0	620	750	WN	448	90.0	8.0	IND	BWI	515	0.0
+3	2008	1	3	4	926.0	930	1100	WN	1746	90.0	-4.0	IND	BWI	515	0.0
+4	2008	1	3	4	1829.0	1755	1925	WN	3920	90.0	34.0	IND	BWI	515	1.0
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+3604170	2008	6	19	4	1059.0	1100	1256	DL	1547	236.0	-1.0	ATL	JAC	1572	0.0
+3604171	2008	6	19	4	555.0	600	738	DL	1548	98.0	-5.0	RSW	ATL	515	0.0
+3604172	2008	6	19	4	821.0	827	1003	DL	1548	96.0	-6.0	ATL	IND	432	0.0
+3604173	2008	6	19	4	718.0	735	852	DL	1551	77.0	-17.0	CAE	ATL	191	0.0
+3604174	2008	6	19	4	1127.0	951	1130	DL	1551	159.0	96.0	ATL	MSP	906	1.0
+3604175 rows × 15 columns
+
+​
+data preparation
+1. Data cleaning:
+i) Typecasting
+# 1. Convert 'float' to 'str'
+​
+data.Actual_Shipment_Time = data.Actual_Shipment_Time.astype('str')
+data.dtypes
+Year                       int64
+Month                      int64
+DayofMonth                 int64
+DayOfWeek                  int64
+Actual_Shipment_Time      object
+Planned_Shipment_Time      int64
+Planned_Delivery_Time      int64
+Carrier_Name              object
+Carrier_Num                int64
+Planned_TimeofTravel     float64
+Shipment_Delay           float64
+Source                    object
+Destination               object
+Distance                   int64
+Delivery_Status          float64
+dtype: object
+# 2. Convert 'str' to 'float'
+​
+data.Actual_Shipment_Time = data.Actual_Shipment_Time.astype('float32')
+data.dtypes
+Year                       int64
+Month                      int64
+DayofMonth                 int64
+DayOfWeek                  int64
+Actual_Shipment_Time     float32
+Planned_Shipment_Time      int64
+Planned_Delivery_Time      int64
+Carrier_Name              object
+Carrier_Num                int64
+Planned_TimeofTravel     float64
+Shipment_Delay           float64
+Source                    object
+Destination               object
+Distance                   int64
+Delivery_Status          float64
+dtype: object
+# 3. Convert 'int' to 'float'
+​
+data.Month = data.Month.astype('float32')
+data.dtypes
+​
+Year                       int64
+Month                    float32
+DayofMonth                 int64
+DayOfWeek                  int64
+Actual_Shipment_Time     float32
+Planned_Shipment_Time      int64
+Planned_Delivery_Time      int64
+Carrier_Name              object
+Carrier_Num                int64
+Planned_TimeofTravel     float64
+Shipment_Delay           float64
+Source                    object
+Destination               object
+Distance                   int64
+Delivery_Status          float64
+dtype: object
+# 4. Convert 'float' to 'int'
+​
+data.Month = data.Month.astype('int64')
+data.dtypes
+Year                       int64
+Month                      int64
+DayofMonth                 int64
+DayOfWeek                  int64
+Actual_Shipment_Time     float32
+Planned_Shipment_Time      int64
+Planned_Delivery_Time      int64
+Carrier_Name              object
+Carrier_Num                int64
+Planned_TimeofTravel     float64
+Shipment_Delay           float64
+Source                    object
+Destination               object
+Distance                   int64
+Delivery_Status          float64
+dtype: object
+ii) Handling Duplicates
+# Duplicates in row
+duplicate = data.duplicated() 
+duplicate
+0          False
+1          False
+2          False
+3          False
+4          False
+           ...  
+3604170    False
+3604171    False
+3604172    False
+3604173    False
+3604174    False
+Length: 3604175, dtype: bool
+sum(duplicate) # (it shows the sum of the duplicated value)
+​
+4
+data = data.drop_duplicates()
+data
+Year	Month	DayofMonth	DayOfWeek	Actual_Shipment_Time	Planned_Shipment_Time	Planned_Delivery_Time	Carrier_Name	Carrier_Num	Planned_TimeofTravel	Shipment_Delay	Source	Destination	Distance	Delivery_Status
+0	2008	1	3	4	2003.0	1955	2225	WN	335	150.0	8.0	IAD	TPA	810	0.0
+1	2008	1	3	4	754.0	735	1000	WN	3231	145.0	19.0	IAD	TPA	810	1.0
+2	2008	1	3	4	628.0	620	750	WN	448	90.0	8.0	IND	BWI	515	0.0
+3	2008	1	3	4	926.0	930	1100	WN	1746	90.0	-4.0	IND	BWI	515	0.0
+4	2008	1	3	4	1829.0	1755	1925	WN	3920	90.0	34.0	IND	BWI	515	1.0
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+3604170	2008	6	19	4	1059.0	1100	1256	DL	1547	236.0	-1.0	ATL	JAC	1572	0.0
+3604171	2008	6	19	4	555.0	600	738	DL	1548	98.0	-5.0	RSW	ATL	515	0.0
+3604172	2008	6	19	4	821.0	827	1003	DL	1548	96.0	-6.0	ATL	IND	432	0.0
+3604173	2008	6	19	4	718.0	735	852	DL	1551	77.0	-17.0	CAE	ATL	191	0.0
+3604174	2008	6	19	4	1127.0	951	1130	DL	1551	159.0	96.0	ATL	MSP	906	1.0
+3604171 rows × 15 columns
+
+data.duplicated().sum()
+0
+fedex = pd.read_csv(r"C:\Users\anish\Documents\fedex.csv")
+fedex.corr()
+​
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+Cell In[13], line 2
+      1 fedex = pd.read_csv(r"C:\Users\anish\Documents\fedex.csv")
+----> 2 fedex.corr()
+
+File ~\anaconda3\Lib\site-packages\pandas\core\frame.py:10707, in DataFrame.corr(self, method, min_periods, numeric_only)
+  10705 cols = data.columns
+  10706 idx = cols.copy()
+> 10707 mat = data.to_numpy(dtype=float, na_value=np.nan, copy=False)
+  10709 if method == "pearson":
+  10710     correl = libalgos.nancorr(mat, minp=min_periods)
+
+File ~\anaconda3\Lib\site-packages\pandas\core\frame.py:1892, in DataFrame.to_numpy(self, dtype, copy, na_value)
+   1890 if dtype is not None:
+   1891     dtype = np.dtype(dtype)
+-> 1892 result = self._mgr.as_array(dtype=dtype, copy=copy, na_value=na_value)
+   1893 if result.dtype is not dtype:
+   1894     result = np.array(result, dtype=dtype, copy=False)
+
+File ~\anaconda3\Lib\site-packages\pandas\core\internals\managers.py:1656, in BlockManager.as_array(self, dtype, copy, na_value)
+   1654         arr.flags.writeable = False
+   1655 else:
+-> 1656     arr = self._interleave(dtype=dtype, na_value=na_value)
+   1657     # The underlying data was copied within _interleave, so no need
+   1658     # to further copy if copy=True or setting na_value
+   1660 if na_value is lib.no_default:
+
+File ~\anaconda3\Lib\site-packages\pandas\core\internals\managers.py:1715, in BlockManager._interleave(self, dtype, na_value)
+   1713     else:
+   1714         arr = blk.get_values(dtype)
+-> 1715     result[rl.indexer] = arr
+   1716     itemmask[rl.indexer] = 1
+   1718 if not itemmask.all():
+
+ValueError: could not convert string to float: 'WN'
+
+iii) Missing Values
+# Finding the missing values;
+data.isna().sum()
+data.info()
+iv). outliers Analysis:
+# lets find outliers in Shipment_delay
+data.columns
+Index(['Year', 'Month', 'DayofMonth', 'DayOfWeek', 'Actual_Shipment_Time',
+       'Planned_Shipment_Time', 'Planned_Delivery_Time', 'Carrier_Name',
+       'Carrier_Num', 'Planned_TimeofTravel', 'Shipment_Delay', 'Source',
+       'Destination', 'Distance', 'Delivery_Status'],
+      dtype='object')
+# import seaborn as sns
+​
+# # Specify the columns you want to include in the boxplot
+# columns_to_plot = ['Year', 'Month', 'DayofMonth', 'DayOfWeek', 'Actual_Shipment_Time',
+#        'Planned_Shipment_Time', 'Planned_Delivery_Time', 'Carrier_Name',
+#        'Carrier_Num', 'Planned_TimeofTravel', 'Shipment_Delay', 'Source',
+#        'Destination', 'Distance', 'Delivery_Status']
+​
+# # Create a boxplot for the selected columns
+# sns.boxplot(data=data[columns_to_plot])
+​
+# import seaborn as sns
+​
+# # Specify the columns you want to include in the boxplot
+# columns_to_plot = ['Actual_Shipment_Time', 'Carrier_Num', 'Planned_TimeofTravel', 'Distance', 'Shipment_Delay']
+​
+# # Create a boxplot for the selected columns
+# sns.boxplot(data=data[columns_to_plot])
+​
+sns.boxplot(data.Shipment_Delay)           #(Outliers in Shipment_Delay)
+<Axes: >
+
+sns.boxplot(data.Planned_Shipment_Time)     #(No outliers in Planned_Shipment_Time)
+<Axes: >
+
+sns.boxplot(data.Actual_Shipment_Time)      #(No outliers in Actual_Shipment_Time)
+​
+<Axes: >
+
+sns.boxplot(data.Delivery_Status)           #(Outliers in Delivery_Status)
+​
+<Axes: >
+
+sns.boxplot(data.Distance)                  #(Outliers in Distance)
+​
+<Axes: >
+
+sns.boxplot(data.Year)                      #(No outliers in Year)
+​
+<Axes: >
+
+sns.boxplot(data.Month)                     #(No outliers in Month)
+​
+<Axes: >
+
+sns.boxplot(data.Planned_Delivery_Time)     #(No outliers in Planned_Delivery_Time)
+​
+<Axes: >
+
+sns.boxplot(data.Planned_TimeofTravel)      #(Outliers in Planned_TimeofTravel)
+​
+<Axes: >
+
+sns.boxplot(data.Carrier_Num)               #(Outliers in Carrier_Num)
+​
+<Axes: >
+
+Mean Imputation
+mean_imputer = SimpleImputer(missing_values = np.nan, strategy = 'mean')
+data['Planned_Delivery_Time'] = pd.DataFrame(mean_imputer.fit_transform(data[['Planned_Delivery_Time']]))
+data['Planned_Delivery_Time'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\190040467.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Planned_Delivery_Time'] = pd.DataFrame(mean_imputer.fit_transform(data[['Planned_Delivery_Time']]))
+4
+mean_imputer = SimpleImputer(missing_values = np.nan, strategy = 'mean')
+data['Planned_Shipment_Time'] = pd.DataFrame(mean_imputer.fit_transform(data[['Planned_Shipment_Time']]))
+data['Planned_Shipment_Time'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\2508445380.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Planned_Shipment_Time'] = pd.DataFrame(mean_imputer.fit_transform(data[['Planned_Shipment_Time']]))
+4
+mean_imputer = SimpleImputer(missing_values = np.nan, strategy = 'mean')
+data['Actual_Shipment_Time'] = pd.DataFrame(mean_imputer.fit_transform(data[['Actual_Shipment_Time']]))
+data['Actual_Shipment_Time'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\2412029038.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Actual_Shipment_Time'] = pd.DataFrame(mean_imputer.fit_transform(data[['Actual_Shipment_Time']]))
+4
+Median Imputation
+median_imputer = SimpleImputer(missing_values = np.nan, strategy = 'median')
+data['Delivery_Status'] = pd.DataFrame(median_imputer.fit_transform(data[['Delivery_Status']]))
+data['Delivery_Status'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\2840338441.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Delivery_Status'] = pd.DataFrame(median_imputer.fit_transform(data[['Delivery_Status']]))
+4
+median_imputer = SimpleImputer(missing_values = np.nan, strategy = 'median')
+data['Shipment_Delay'] = pd.DataFrame(median_imputer.fit_transform(data[['Shipment_Delay']]))
+data['Shipment_Delay'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1113649502.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Shipment_Delay'] = pd.DataFrame(median_imputer.fit_transform(data[['Shipment_Delay']]))
+4
+median_imputer = SimpleImputer(missing_values = np.nan, strategy = 'median')
+data['Planned_TimeofTravel'] = pd.DataFrame(median_imputer.fit_transform(data[['Planned_TimeofTravel']]))
+data['Planned_TimeofTravel'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\673941640.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Planned_TimeofTravel'] = pd.DataFrame(median_imputer.fit_transform(data[['Planned_TimeofTravel']]))
+4
+median_imputer = SimpleImputer(missing_values = np.nan, strategy = 'median')
+data['Distance'] = pd.DataFrame(median_imputer.fit_transform(data[['Distance']]))
+data['Distance'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\4210614428.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Distance'] = pd.DataFrame(median_imputer.fit_transform(data[['Distance']]))
+4
+median_imputer = SimpleImputer(missing_values = np.nan, strategy = 'median')
+data['Carrier_Num'] = pd.DataFrame(median_imputer.fit_transform(data[['Carrier_Num']]))
+data['Carrier_Num'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\4148516731.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Carrier_Num'] = pd.DataFrame(median_imputer.fit_transform(data[['Carrier_Num']]))
+4
+Mode Imputation
+mode_imputer = SimpleImputer(missing_values = np.nan, strategy = 'most_frequent')
+data['Source'] = pd.DataFrame(mode_imputer.fit_transform(data[['Source']]))
+data['Carrier_Name'] = pd.DataFrame(mode_imputer.fit_transform(data[['Carrier_Name']]))
+data['Destination'] = pd.DataFrame(mode_imputer.fit_transform(data[['Destination']]))
+data.isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\4014752793.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Source'] = pd.DataFrame(mode_imputer.fit_transform(data[['Source']]))
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\4014752793.py:3: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Carrier_Name'] = pd.DataFrame(mode_imputer.fit_transform(data[['Carrier_Name']]))
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\4014752793.py:4: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Destination'] = pd.DataFrame(mode_imputer.fit_transform(data[['Destination']]))
+Year                     0
+Month                    0
+DayofMonth               0
+DayOfWeek                0
+Actual_Shipment_Time     4
+Planned_Shipment_Time    4
+Planned_Delivery_Time    4
+Carrier_Name             4
+Carrier_Num              4
+Planned_TimeofTravel     4
+Shipment_Delay           4
+Source                   4
+Destination              4
+Distance                 4
+Delivery_Status          4
+dtype: int64
+Random Imputation
+from feature_engine.imputation import RandomSampleImputer
+random_imputer = RandomSampleImputer(['Actual_Shipment_Time'])
+data['Actual_Shipment_Time'] = pd.DataFrame(random_imputer.fit_transform(data[['Actual_Shipment_Time']]))
+data['Actual_Shipment_Time'].isna().sum()
+​
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\472261051.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Actual_Shipment_Time'] = pd.DataFrame(random_imputer.fit_transform(data[['Actual_Shipment_Time']]))
+0
+random_imputer = RandomSampleImputer(['Planned_Shipment_Time'])
+data['Planned_Shipment_Time'] = pd.DataFrame(random_imputer.fit_transform(data[['Planned_Shipment_Time']]))
+data['Planned_Shipment_Time'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\3595025040.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Planned_Shipment_Time'] = pd.DataFrame(random_imputer.fit_transform(data[['Planned_Shipment_Time']]))
+0
+random_imputer=RandomSampleImputer(['Carrier_Name'])
+data['Carrier_Name']=pd.DataFrame(random_imputer.fit_transform(data[['Carrier_Name']]))
+data['Carrier_Name'].isna().sum()
+​
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\4103782318.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Carrier_Name']=pd.DataFrame(random_imputer.fit_transform(data[['Carrier_Name']]))
+0
+random_imputer=RandomSampleImputer(['Planned_TimeofTravel'])
+data['Planned_TimeofTravel']=pd.DataFrame(random_imputer.fit_transform(data[['Planned_TimeofTravel']]))
+data['Planned_TimeofTravel'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\355463209.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Planned_TimeofTravel']=pd.DataFrame(random_imputer.fit_transform(data[['Planned_TimeofTravel']]))
+0
+random_imputer=RandomSampleImputer(['Carrier_Num'])
+data['Carrier_Num']=pd.DataFrame(random_imputer.fit_transform(data[['Carrier_Num']]))
+data['Carrier_Num'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1853200764.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Carrier_Num']=pd.DataFrame(random_imputer.fit_transform(data[['Carrier_Num']]))
+0
+random_imputer=RandomSampleImputer(['Shipment_Delay'])
+data['Shipment_Delay']=pd.DataFrame(random_imputer.fit_transform(data[['Shipment_Delay']]))
+data['Shipment_Delay'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\2217983980.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Shipment_Delay']=pd.DataFrame(random_imputer.fit_transform(data[['Shipment_Delay']]))
+0
+random_imputer=RandomSampleImputer(['Source'])
+data['Source']=pd.DataFrame(random_imputer.fit_transform(data[['Source']]))
+data['Source'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1406935376.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Source']=pd.DataFrame(random_imputer.fit_transform(data[['Source']]))
+0
+random_imputer=RandomSampleImputer(['Delivery_Status'])
+data['Delivery_Status']=pd.DataFrame(random_imputer.fit_transform(data[['Delivery_Status']]))
+data['Delivery_Status'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\2820569993.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Delivery_Status']=pd.DataFrame(random_imputer.fit_transform(data[['Delivery_Status']]))
+0
+random_imputer=RandomSampleImputer(['Distance'])
+data['Distance']=pd.DataFrame(random_imputer.fit_transform(data[['Distance']]))
+data['Distance'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\136340022.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Distance']=pd.DataFrame(random_imputer.fit_transform(data[['Distance']]))
+0
+random_imputer=RandomSampleImputer(['Destination'])
+data['Destination']=pd.DataFrame(random_imputer.fit_transform(data[['Destination']]))
+data['Destination'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1296281821.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Destination']=pd.DataFrame(random_imputer.fit_transform(data[['Destination']]))
+0
+random_imputer=RandomSampleImputer(['Planned_Delivery_Time'])
+data['Planned_Delivery_Time']=pd.DataFrame(random_imputer.fit_transform(data[['Planned_Delivery_Time']]))
+data['Planned_Delivery_Time'].isna().sum()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1281979167.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Planned_Delivery_Time']=pd.DataFrame(random_imputer.fit_transform(data[['Planned_Delivery_Time']]))
+0
+data.isna().sum()
+Year                     0
+Month                    0
+DayofMonth               0
+DayOfWeek                0
+Actual_Shipment_Time     0
+Planned_Shipment_Time    0
+Planned_Delivery_Time    0
+Carrier_Name             0
+Carrier_Num              0
+Planned_TimeofTravel     0
+Shipment_Delay           0
+Source                   0
+Destination              0
+Distance                 0
+Delivery_Status          0
+dtype: int64
+Outlier Treatment
+from feature_engine.outliers import Winsorizer
+# Define the model with IQR method
+​
+winsor_iqr = Winsorizer(capping_method = 'iqr', 
+                        # choose  IQR rule boundaries or gaussian for mean and std
+                          tail = 'both', # cap left, right or both tails 
+                          fold = 1.5, 
+                          variables = ['Actual_Shipment_Time', 'Carrier_Num','Planned_TimeofTravel','Distance','Shipment_Delay'])
+​
+df = winsor_iqr.fit_transform(data[['Actual_Shipment_Time', 'Carrier_Num','Planned_TimeofTravel','Distance','Shipment_Delay']])
+​
+# # winsorizer method
+# winsor_iqr = Winsorizer(capping_method = 'iqr', 
+#                           tail = 'both', # cap left, right or both tails 
+#                           fold = 1.5, 
+#                           variables = ['Distance'])
+​
+# data=winsor_iqr.fit_transform(data[['Distance']])
+# winsor_gaussian = Winsorizer(capping_method = 'gaussian', 
+#                              # choose IQR rule boundaries or gaussian for mean and std
+#                           tail = 'both', # cap left, right or both tails 
+#                           fold = 3,
+#                           variables = ['Distance'])
+​
+# data_ = winsor_gaussian.fit_transform(data[['Distance']])
+# sns.boxplot(data_.Distance)
+# winsor_percentile = Winsorizer(capping_method = 'quantiles',
+#                           tail = 'both', # cap left, right or both tails 
+#                           fold = 0.05, # limits will be the 5th and 95th percentiles
+#                           variables = ['Distance'])
+​
+# data1 = winsor_percentile.fit_transform(data[['Distance']])
+# sns.boxplot(data1.Distance)
+# winsor_percentile = Winsorizer(capping_method = 'quantiles',
+#                           tail = 'both', # cap left, right or both tails 
+#                           fold = 0.05, # limits will be the 5th and 95th percentiles
+#                           variables = ['Shipment_Delay'])
+​
+# data1 = winsor_percentile.fit_transform(data[['Shipment_Delay']])
+# sns.boxplot(data1.Shipment_Delay)
+# winsor_percentile = Winsorizer(capping_method='quantiles',
+#                                    tail='both',
+#                                    fold=0.05,
+#                                    variables=['Shipment_Delay'])
+# data1 = winsor_percentile.fit_transform(data[['Shipment_Delay']])
+# sns.boxplot(data1['Shipment_Delay'])  # Use brackets to access the column
+# data.head()
+# data[['Shipment_Delay']]
+data.head()
+Year	Month	DayofMonth	DayOfWeek	Actual_Shipment_Time	Planned_Shipment_Time	Planned_Delivery_Time	Carrier_Name	Carrier_Num	Planned_TimeofTravel	Shipment_Delay	Source	Destination	Distance	Delivery_Status
+0	2008	1	3	4	2003.0	1955.0	2225.0	WN	335.0	150.0	8.0	IAD	TPA	810.0	0.0
+1	2008	1	3	4	754.0	735.0	1000.0	WN	3231.0	145.0	19.0	IAD	TPA	810.0	1.0
+2	2008	1	3	4	628.0	620.0	750.0	WN	448.0	90.0	8.0	IND	BWI	515.0	0.0
+3	2008	1	3	4	926.0	930.0	1100.0	WN	1746.0	90.0	-4.0	IND	BWI	515.0	0.0
+4	2008	1	3	4	1829.0	1755.0	1925.0	WN	3920.0	90.0	34.0	IND	BWI	515.0	1.0
+import seaborn as sns
+​
+# Specify the columns you want to include in the boxplot
+columns_to_plot = ['Actual_Shipment_Time', 'Carrier_Num', 'Planned_TimeofTravel', 'Distance', 'Shipment_Delay']
+​
+# Create a boxplot for the selected columns
+sns.boxplot(data=df[columns_to_plot])
+​
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+<Axes: >
+
+zero variance and near zero variance
+data.dtypes
+Year                       int64
+Month                      int64
+DayofMonth                 int64
+DayOfWeek                  int64
+Actual_Shipment_Time     float32
+Planned_Shipment_Time    float64
+Planned_Delivery_Time    float64
+Carrier_Name              object
+Carrier_Num              float64
+Planned_TimeofTravel     float64
+Shipment_Delay           float64
+Source                    object
+Destination               object
+Distance                 float64
+Delivery_Status          float64
+dtype: object
+data.head()
+Year	Month	DayofMonth	DayOfWeek	Actual_Shipment_Time	Planned_Shipment_Time	Planned_Delivery_Time	Carrier_Name	Carrier_Num	Planned_TimeofTravel	Shipment_Delay	Source	Destination	Distance	Delivery_Status
+0	2008	1	3	4	2003.0	1955.0	2225.0	WN	335.0	150.0	8.0	IAD	TPA	810.0	0.0
+1	2008	1	3	4	754.0	735.0	1000.0	WN	3231.0	145.0	19.0	IAD	TPA	810.0	1.0
+2	2008	1	3	4	628.0	620.0	750.0	WN	448.0	90.0	8.0	IND	BWI	515.0	0.0
+3	2008	1	3	4	926.0	930.0	1100.0	WN	1746.0	90.0	-4.0	IND	BWI	515.0	0.0
+4	2008	1	3	4	1829.0	1755.0	1925.0	WN	3920.0	90.0	34.0	IND	BWI	515.0	1.0
+data.var()
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+File ~\anaconda3\Lib\site-packages\pandas\core\nanops.py:85, in disallow.__call__.<locals>._f(*args, **kwargs)
+     84 try:
+---> 85     return f(*args, **kwargs)
+     86 except ValueError as e:
+     87     # we want to transform an object array
+     88     # ValueError message to the more typical TypeError
+     89     # e.g. this is normally a disallowed function on
+     90     # object arrays that contain strings
+
+File ~\anaconda3\Lib\site-packages\pandas\core\nanops.py:147, in bottleneck_switch.__call__.<locals>.f(values, axis, skipna, **kwds)
+    146 else:
+--> 147     result = alt(values, axis=axis, skipna=skipna, **kwds)
+    149 return result
+
+File ~\anaconda3\Lib\site-packages\pandas\core\nanops.py:1007, in nanvar(values, axis, skipna, ddof, mask)
+   1001 # xref GH10242
+   1002 # Compute variance via two-pass algorithm, which is stable against
+   1003 # cancellation errors and relatively accurate for small numbers of
+   1004 # observations.
+   1005 #
+   1006 # See https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+-> 1007 avg = _ensure_numeric(values.sum(axis=axis, dtype=np.float64)) / count
+   1008 if axis is not None:
+
+File ~\anaconda3\Lib\site-packages\numpy\core\_methods.py:49, in _sum(a, axis, dtype, out, keepdims, initial, where)
+     47 def _sum(a, axis=None, dtype=None, out=None, keepdims=False,
+     48          initial=_NoValue, where=True):
+---> 49     return umr_sum(a, axis, dtype, out, keepdims, initial, where)
+
+ValueError: could not convert string to float: 'WN'
+
+The above exception was the direct cause of the following exception:
+
+TypeError                                 Traceback (most recent call last)
+Cell In[63], line 1
+----> 1 data.var()
+
+File ~\anaconda3\Lib\site-packages\pandas\core\frame.py:11379, in DataFrame.var(self, axis, skipna, ddof, numeric_only, **kwargs)
+  11370 @doc(make_doc("var", ndim=2))
+  11371 def var(
+  11372     self,
+   (...)
+  11377     **kwargs,
+  11378 ):
+> 11379     result = super().var(axis, skipna, ddof, numeric_only, **kwargs)
+  11380     if isinstance(result, Series):
+  11381         result = result.__finalize__(self, method="var")
+
+File ~\anaconda3\Lib\site-packages\pandas\core\generic.py:11904, in NDFrame.var(self, axis, skipna, ddof, numeric_only, **kwargs)
+  11896 def var(
+  11897     self,
+  11898     axis: Axis | None = 0,
+   (...)
+  11902     **kwargs,
+  11903 ) -> Series | float:
+> 11904     return self._stat_function_ddof(
+  11905         "var", nanops.nanvar, axis, skipna, ddof, numeric_only, **kwargs
+  11906     )
+
+File ~\anaconda3\Lib\site-packages\pandas\core\generic.py:11880, in NDFrame._stat_function_ddof(self, name, func, axis, skipna, ddof, numeric_only, **kwargs)
+  11877 elif axis is lib.no_default:
+  11878     axis = 0
+> 11880 return self._reduce(
+  11881     func, name, axis=axis, numeric_only=numeric_only, skipna=skipna, ddof=ddof
+  11882 )
+
+File ~\anaconda3\Lib\site-packages\pandas\core\frame.py:11207, in DataFrame._reduce(self, op, name, axis, skipna, numeric_only, filter_type, **kwds)
+  11203     df = df.T
+  11205 # After possibly _get_data and transposing, we are now in the
+  11206 #  simple case where we can use BlockManager.reduce
+> 11207 res = df._mgr.reduce(blk_func)
+  11208 out = df._constructor_from_mgr(res, axes=res.axes).iloc[0]
+  11209 if out_dtype is not None and out.dtype != "boolean":
+
+File ~\anaconda3\Lib\site-packages\pandas\core\internals\managers.py:1459, in BlockManager.reduce(self, func)
+   1457 res_blocks: list[Block] = []
+   1458 for blk in self.blocks:
+-> 1459     nbs = blk.reduce(func)
+   1460     res_blocks.extend(nbs)
+   1462 index = Index([None])  # placeholder
+
+File ~\anaconda3\Lib\site-packages\pandas\core\internals\blocks.py:377, in Block.reduce(self, func)
+    371 @final
+    372 def reduce(self, func) -> list[Block]:
+    373     # We will apply the function and reshape the result into a single-row
+    374     #  Block with the same mgr_locs; squeezing will be done at a higher level
+    375     assert self.ndim == 2
+--> 377     result = func(self.values)
+    379     if self.values.ndim == 1:
+    380         res_values = result
+
+File ~\anaconda3\Lib\site-packages\pandas\core\frame.py:11139, in DataFrame._reduce.<locals>.blk_func(values, axis)
+  11137         return np.array([result])
+  11138 else:
+> 11139     return op(values, axis=axis, skipna=skipna, **kwds)
+
+File ~\anaconda3\Lib\site-packages\pandas\core\nanops.py:92, in disallow.__call__.<locals>._f(*args, **kwargs)
+     86 except ValueError as e:
+     87     # we want to transform an object array
+     88     # ValueError message to the more typical TypeError
+     89     # e.g. this is normally a disallowed function on
+     90     # object arrays that contain strings
+     91     if is_object_dtype(args[0]):
+---> 92         raise TypeError(e) from e
+     93     raise
+
+TypeError: could not convert string to float: 'WN'
+
+data.var(axis = 0) ==0
+data.var(axis = 1) == 0
+Discretization
+data['Actual_Shipment_Time_New'] = pd.cut(data['Actual_Shipment_Time'], 
+                              bins = [min(data.Actual_Shipment_Time), data.Actual_Shipment_Time.mean(), max(data.Actual_Shipment_Time)],
+                              labels = ["Low", "High"])
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1800458502.py:1: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Actual_Shipment_Time_New'] = pd.cut(data['Actual_Shipment_Time'],
+data.Actual_Shipment_Time_New.value_counts()
+Actual_Shipment_Time_New
+High    1806270
+Low     1797577
+Name: count, dtype: int64
+data.dtypes
+Year                           int64
+Month                          int64
+DayofMonth                     int64
+DayOfWeek                      int64
+Actual_Shipment_Time         float32
+Planned_Shipment_Time        float64
+Planned_Delivery_Time        float64
+Carrier_Name                  object
+Carrier_Num                  float64
+Planned_TimeofTravel         float64
+Shipment_Delay               float64
+Source                        object
+Destination                   object
+Distance                     float64
+Delivery_Status              float64
+Actual_Shipment_Time_New    category
+dtype: object
+Discretization / Multiple bins
+data['Distance_multi'] = pd.cut(data['Distance'], 
+                              bins = [min(data.Distance), 
+                                      data.Distance.quantile(0.25),
+                                      data.Distance.mean(),
+                                      data.Distance.quantile(0.75),
+                                      max(data.Distance)], 
+                              include_lowest = True,
+                              labels = ["P1", "P2", "P3", "P4"])
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1189612786.py:1: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data['Distance_multi'] = pd.cut(data['Distance'],
+data.Distance_multi.value_counts()
+Distance_multi
+P2    1325128
+P1     901482
+P4     894338
+P3     483223
+Name: count, dtype: int64
+data.dtypes
+Year                           int64
+Month                          int64
+DayofMonth                     int64
+DayOfWeek                      int64
+Actual_Shipment_Time         float32
+Planned_Shipment_Time        float64
+Planned_Delivery_Time        float64
+Carrier_Name                  object
+Carrier_Num                  float64
+Planned_TimeofTravel         float64
+Shipment_Delay               float64
+Source                        object
+Destination                   object
+Distance                     float64
+Delivery_Status              float64
+Actual_Shipment_Time_New    category
+Distance_multi              category
+dtype: object
+Dummy Variables
+data.shape
+(3604171, 17)
+data.columns
+Index(['Year', 'Month', 'DayofMonth', 'DayOfWeek', 'Actual_Shipment_Time',
+       'Planned_Shipment_Time', 'Planned_Delivery_Time', 'Carrier_Name',
+       'Carrier_Num', 'Planned_TimeofTravel', 'Shipment_Delay', 'Source',
+       'Destination', 'Distance', 'Delivery_Status',
+       'Actual_Shipment_Time_New', 'Distance_multi'],
+      dtype='object')
+data.info
+<bound method DataFrame.info of          Year  Month  DayofMonth  DayOfWeek  Actual_Shipment_Time  \
+0        2008      1           3          4                2003.0   
+1        2008      1           3          4                 754.0   
+2        2008      1           3          4                 628.0   
+3        2008      1           3          4                 926.0   
+4        2008      1           3          4                1829.0   
+...       ...    ...         ...        ...                   ...   
+3604170  2008      6          19          4                1127.0   
+3604171  2008      6          19          4                1905.0   
+3604172  2008      6          19          4                 902.0   
+3604173  2008      6          19          4                2214.0   
+3604174  2008      6          19          4                 459.0   
+
+         Planned_Shipment_Time  Planned_Delivery_Time Carrier_Name  \
+0                       1955.0                 2225.0           WN   
+1                        735.0                 1000.0           WN   
+2                        620.0                  750.0           WN   
+3                        930.0                 1100.0           WN   
+4                       1755.0                 1925.0           WN   
+...                        ...                    ...          ...   
+3604170                  951.0                 1130.0           DL   
+3604171                 1252.0                 1710.0           US   
+3604172                 1821.0                 1130.0           WN   
+3604173                  740.0                 1600.0           AA   
+3604174                 1140.0                 2014.0           OO   
+
+         Carrier_Num  Planned_TimeofTravel  Shipment_Delay Source Destination  \
+0              335.0                 150.0             8.0    IAD         TPA   
+1             3231.0                 145.0            19.0    IAD         TPA   
+2              448.0                  90.0             8.0    IND         BWI   
+3             1746.0                  90.0            -4.0    IND         BWI   
+4             3920.0                  90.0            34.0    IND         BWI   
+...              ...                   ...             ...    ...         ...   
+3604170       1551.0                 159.0            96.0    ATL         MSP   
+3604171       1252.0                 105.0             0.0    GNV         MDW   
+3604172       1230.0                  95.0            -5.0    SJU         DTW   
+3604173         27.0                 120.0            -2.0    HDN         SNA   
+3604174       1189.0                 284.0             7.0    PDX         XNA   
+
+         Distance  Delivery_Status Actual_Shipment_Time_New Distance_multi  
+0           810.0              0.0                     High             P3  
+1           810.0              1.0                      Low             P3  
+2           515.0              0.0                      Low             P2  
+3           515.0              0.0                      Low             P2  
+4           515.0              1.0                     High             P2  
+...           ...              ...                      ...            ...  
+3604170     906.0              1.0                      Low             P3  
+3604171     992.0              0.0                     High             P4  
+3604172    1745.0              1.0                      Low             P4  
+3604173     438.0              0.0                     High             P2  
+3604174     227.0              0.0                      Low             P1  
+
+[3604171 rows x 17 columns]>
+df_new = pd.get_dummies(data)
+df_new_1 = pd.get_dummies(data, drop_first = True)
+EDA (Exploratory Data Analysis)
+First Moment Business Decision
+data.mean(numeric_only = True)
+Year                     2008.000000
+Month                       3.514944
+DayofMonth                 15.684796
+DayOfWeek                   3.934604
+Actual_Shipment_Time     1338.453979
+Planned_Shipment_Time    1329.369910
+Planned_Delivery_Time    1495.303944
+Carrier_Num              2223.796905
+Planned_TimeofTravel      129.157539
+Shipment_Delay             10.883619
+Distance                  728.090959
+Delivery_Status             0.199272
+dtype: float64
+data.median(numeric_only = True)
+Year                     2008.00000
+Month                       4.00000
+DayofMonth                 16.00000
+DayOfWeek                   4.00000
+Actual_Shipment_Time     1338.45459
+Planned_Shipment_Time    1321.00000
+Planned_Delivery_Time    1519.00000
+Carrier_Num              1573.00000
+Planned_TimeofTravel      111.00000
+Shipment_Delay             -1.00000
+Distance                  583.00000
+Delivery_Status             0.00000
+dtype: float64
+data.mode(numeric_only = True)
+Year	Month	DayofMonth	DayOfWeek	Actual_Shipment_Time	Planned_Shipment_Time	Planned_Delivery_Time	Carrier_Num	Planned_TimeofTravel	Shipment_Delay	Distance	Delivery_Status
+0	2008	3	18	5	1338.45459	600.0	1930.0	16.0	75.0	-1.0	337.0	0.0
+Second Moment Business Decision
+data.var(numeric_only = True)
+Year                     0.000000e+00
+Month                    2.923799e+00
+DayofMonth               7.679591e+01
+DayOfWeek                3.948674e+00
+Actual_Shipment_Time     2.257482e+05
+Planned_Shipment_Time    2.175630e+05
+Planned_Delivery_Time    2.356932e+05
+Carrier_Num              3.781403e+06
+Planned_TimeofTravel     4.830976e+03
+Shipment_Delay           1.283255e+03
+Distance                 3.148692e+05
+Delivery_Status          1.595630e-01
+dtype: float64
+data.std(numeric_only = True)
+Year                        0.000000
+Month                       1.709912
+DayofMonth                  8.763328
+DayOfWeek                   1.987127
+Actual_Shipment_Time      475.129730
+Planned_Shipment_Time     466.436462
+Planned_Delivery_Time     485.482451
+Carrier_Num              1944.583008
+Planned_TimeofTravel       69.505225
+Shipment_Delay             35.822552
+Distance                  561.132070
+Delivery_Status             0.399453
+dtype: float64
+range = max(data.Actual_Shipment_Time) - min(data.Actual_Shipment_Time)
+range
+2399.0
+range = max(data.Planned_Shipment_Time) - min(data.Planned_Shipment_Time)
+range
+2359.0
+range = max(data.Planned_Delivery_Time) - min(data.Planned_Delivery_Time)
+range
+2400.0
+range = max(data.Planned_TimeofTravel) - min(data.Planned_TimeofTravel)
+range
+1460.0
+range = max(data.Shipment_Delay) - min(data.Shipment_Delay)
+range
+2559.0
+range = max(data.Carrier_Num) - min(data.Carrier_Num)
+range
+9740.0
+range = max(data.Distance) - min(data.Distance)
+range
+4951.0
+range = max(data.Delivery_Status) - min(data.Delivery_Status)
+range
+1.0
+Third Moment Business Decision
+data.Actual_Shipment_Time.skew()
+0.044383723
+data.Planned_Shipment_Time.skew()
+0.08186554059207453
+data.Planned_Delivery_Time.skew()
+-0.20758814459099095
+data.Carrier_Num.skew()
+0.8948497760833481
+data.Planned_TimeofTravel.skew()
+1.5012488624594416
+data.Shipment_Delay.skew()
+6.326694120827006
+data.Distance.skew()
+1.6292411538080098
+data.Delivery_Status.skew()
+1.5056962459425576
+data.skew(numeric_only = True)
+Year                     0.000000
+Month                   -0.016887
+DayofMonth               0.005830
+DayOfWeek                0.048492
+Actual_Shipment_Time     0.044384
+Planned_Shipment_Time    0.081866
+Planned_Delivery_Time   -0.207588
+Carrier_Num              0.894850
+Planned_TimeofTravel     1.501249
+Shipment_Delay           6.326694
+Distance                 1.629241
+Delivery_Status          1.505696
+dtype: float64
+Fourth Moment Business Decision
+data.kurtosis(numeric_only = True)
+Year                      0.000000
+Month                    -1.264567
+DayofMonth               -1.194501
+DayOfWeek                -1.214070
+Actual_Shipment_Time     -0.938732
+Planned_Shipment_Time    -1.047930
+Planned_Delivery_Time    -0.603208
+Carrier_Num              -0.244558
+Planned_TimeofTravel      2.801790
+Shipment_Delay           98.038887
+Distance                  3.309958
+Delivery_Status           0.267121
+dtype: float64
+Graphical Representation
+Histogram
+fig=plt.figure(figsize=(10,20))
+axd=fig.gca()
+data.hist(ax= axd)
+plt.show()
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1272916236.py:3: UserWarning: To output multiple subplots, the figure containing the passed axes is being cleared.
+  data.hist(ax= axd)
+
+Insights
+Looking at different plots,we found out that the 
+columns:"Carrier_Num","Planned_TimeofTravel","Shipment_Delay","Distance" are skewed to one side so may be these columns are 
+having outliers so we have to represent these columns in box plot to get proper outlier representation.
+  Cell In[100], line 4
+    having outliers so we have to represent these columns in box plot to get proper outlier representation.
+                                                                                           ^
+SyntaxError: invalid non-printable character U+00A0
+
+
+Density Plot
+import seaborn as sns
+import matplotlib.pyplot as plt
+​
+#'Carrier_Num', 'Planned_TimeofTravel', 'Distance', 'Shipment_Delay', 'Planned_Shipment_Time', 'Planned_Delivery_Time', 'Delivery_Status']
+​
+# Create subplots for each column
+fig, axes = plt.subplots(nrows=1, ncols=len(columns_to_plot), figsize=(15, 5))
+​
+# Plot density plots for each column
+for i, column in enumerate(columns_to_plot):
+    sns.kdeplot(data[column], ax=axes[i], shade=True)
+    axes[i].set_title(column)
+​
+plt.tight_layout()
+plt.show()
+​
+sns.displot(data.DayOfWeek, color = 'black')
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+<seaborn.axisgrid.FacetGrid at 0x1cb171a8d50>
+
+sns.displot(data.Actual_Shipment_Time, color = 'pink')
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+<seaborn.axisgrid.FacetGrid at 0x1cb32116a10>
+
+sns.displot(data.Planned_Shipment_Time, color = 'green')
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+<seaborn.axisgrid.FacetGrid at 0x1cb4387ba10>
+
+sns.displot(data.Planned_Delivery_Time, color = 'orange')
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+<seaborn.axisgrid.FacetGrid at 0x1cb437b8b10>
+
+sns.displot(data.Shipment_Delay, color = 'pink')
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+<seaborn.axisgrid.FacetGrid at 0x1cb618c8e50>
+
+sns.displot(data.Planned_TimeofTravel, color = 'blue')
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+<seaborn.axisgrid.FacetGrid at 0x1cba1dbfc10>
+
+sns.displot(data.Carrier_Num, color = 'lime')
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+<seaborn.axisgrid.FacetGrid at 0x1cb7e188590>
+
+Bivariate visualization
+Scatter plot
+plt.scatter(x = fedex['Actual_Shipment_Time'], y = fedex['Carrier_Num'], color = 'green') 
+<matplotlib.collections.PathCollection at 0x1cb9558cf90>
+
+plt.scatter(x = fedex['Planned_Shipment_Time'], y = fedex['Planned_Delivery_Time'], color = 'pink')
+<matplotlib.collections.PathCollection at 0x1cb17332e10>
+
+plt.scatter(x = fedex['Carrier_Num'], y = fedex['Planned_TimeofTravel'], color = 'purple')
+<matplotlib.collections.PathCollection at 0x1cb3213b090>
+
+plt.scatter(x = fedex['Shipment_Delay'], y = fedex['Distance'], color = 'black')
+<matplotlib.collections.PathCollection at 0x1cb957fae90>
+
+plt.scatter(x = fedex['Delivery_Status'], y = fedex['Actual_Shipment_Time'], color = 'red')
+<matplotlib.collections.PathCollection at 0x1cb957d3910>
+
+Q-Q Plot
+stats.probplot(data.Actual_Shipment_Time, dist = "norm", plot = pylab)
+((array([-5.0764084 , -4.90513303, -4.81276633, ...,  4.81276633,
+          4.90513303,  5.0764084 ]),
+  array([1.0e+00, 1.0e+00, 1.0e+00, ..., 2.4e+03, 2.4e+03, 2.4e+03],
+        dtype=float32)),
+ (469.61193802009495, 1338.45361328125, 0.9867345180903022))
+
+stats.probplot(data.Planned_Shipment_Time, dist = "norm", plot = pylab)
+((array([-5.0764084 , -4.90513303, -4.81276633, ...,  4.81276633,
+          4.90513303,  5.0764084 ]),
+  array([   0.,    0.,    0., ..., 2359., 2359., 2359.])),
+ (458.6260489759848, 1329.369910029241, 0.9832537340479213))
+
+stats.probplot(data.Planned_Delivery_Time, dist = "norm", plot = pylab)
+((array([-5.0764084 , -4.90513303, -4.81276633, ...,  4.81276633,
+          4.90513303,  5.0764084 ]),
+  array([   0.,    0.,    0., ..., 2400., 2400., 2400.])),
+ (479.16943057841377, 1495.3039442357203, 0.9869949870909552))
+
+stats.probplot(data.Distance, dist = "norm", plot = pylab)
+((array([-5.0764084 , -4.90513303, -4.81276633, ...,  4.81276633,
+          4.90513303,  5.0764084 ]),
+  array([  11.,   17.,   21., ..., 4962., 4962., 4962.])),
+ (518.1364387105621, 728.0909587808127, 0.9233756642172259))
+
+stats.probplot(data.Shipment_Delay, dist = "norm", plot = pylab)
+((array([-5.0764084 , -4.90513303, -4.81276633, ...,  4.81276633,
+          4.90513303,  5.0764084 ]),
+  array([ -92.,  -79.,  -71., ..., 1952., 2457., 2467.])),
+ (25.258308851318983, 10.883619006978307, 0.7050941828285893))
+
+Box-Cox
+fitted_data, fitted_lambda = stats.boxcox(data.Actual_Shipment_Time)
+fig, ax = plt.subplots(1, 2)
+sns.distplot(data.Actual_Shipment_Time, hist = False, kde = True,
+             kde_kws = {'shade': True, 'linewidth': 2},
+             label = "Non-Normal", color = "green", ax = ax[0])
+​
+sns.distplot(fitted_data, hist = False, kde = True,
+             kde_kws = {'shade': True, 'linewidth': 2},
+             label = "Normal", color = "green", ax = ax[1])
+C:\Users\anish\anaconda3\Lib\site-packages\numpy\core\_methods.py:239: RuntimeWarning: overflow encountered in multiply
+  x = um.multiply(x, x, out=x)
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1701552709.py:3: UserWarning: 
+
+`distplot` is a deprecated function and will be removed in seaborn v0.14.0.
+
+Please adapt your code to use either `displot` (a figure-level function with
+similar flexibility) or `kdeplot` (an axes-level function for kernel density plots).
+
+For a guide to updating your code to use the new functions, please see
+https://gist.github.com/mwaskom/de44147ed2974457ad6372750bbe5751
+
+  sns.distplot(data.Actual_Shipment_Time, hist = False, kde = True,
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\distributions.py:2511: FutureWarning: 
+
+`shade` is now deprecated in favor of `fill`; setting `fill=True`.
+This will become an error in seaborn v0.14.0; please update your code.
+
+  kdeplot(**{axis: a}, ax=ax, color=kde_color, **kde_kws)
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\1701552709.py:7: UserWarning: 
+
+`distplot` is a deprecated function and will be removed in seaborn v0.14.0.
+
+Please adapt your code to use either `displot` (a figure-level function with
+similar flexibility) or `kdeplot` (an axes-level function for kernel density plots).
+
+For a guide to updating your code to use the new functions, please see
+https://gist.github.com/mwaskom/de44147ed2974457ad6372750bbe5751
+
+  sns.distplot(fitted_data, hist = False, kde = True,
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\distributions.py:2511: FutureWarning: 
+
+`shade` is now deprecated in favor of `fill`; setting `fill=True`.
+This will become an error in seaborn v0.14.0; please update your code.
+
+  kdeplot(**{axis: a}, ax=ax, color=kde_color, **kde_kws)
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+<Axes: ylabel='Density'>
+
+fitted_data, fitted_lambda = stats.boxcox(data.Month)
+fig, ax = plt.subplots(1, 2)
+sns.distplot(data.Month, hist = False, kde = True,
+             kde_kws = {'shade': True, 'linewidth': 2},
+             label = "Non-Normal", color = "green", ax = ax[0])
+​
+sns.distplot(fitted_data, hist = False, kde = True,
+             kde_kws = {'shade': True, 'linewidth': 2},
+             label = "Normal", color = "green", ax = ax[1])
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\2300483669.py:3: UserWarning: 
+
+`distplot` is a deprecated function and will be removed in seaborn v0.14.0.
+
+Please adapt your code to use either `displot` (a figure-level function with
+similar flexibility) or `kdeplot` (an axes-level function for kernel density plots).
+
+For a guide to updating your code to use the new functions, please see
+https://gist.github.com/mwaskom/de44147ed2974457ad6372750bbe5751
+
+  sns.distplot(data.Month, hist = False, kde = True,
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\distributions.py:2511: FutureWarning: 
+
+`shade` is now deprecated in favor of `fill`; setting `fill=True`.
+This will become an error in seaborn v0.14.0; please update your code.
+
+  kdeplot(**{axis: a}, ax=ax, color=kde_color, **kde_kws)
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+C:\Users\anish\AppData\Local\Temp\ipykernel_17720\2300483669.py:7: UserWarning: 
+
+`distplot` is a deprecated function and will be removed in seaborn v0.14.0.
+
+Please adapt your code to use either `displot` (a figure-level function with
+similar flexibility) or `kdeplot` (an axes-level function for kernel density plots).
+
+For a guide to updating your code to use the new functions, please see
+https://gist.github.com/mwaskom/de44147ed2974457ad6372750bbe5751
+
+  sns.distplot(fitted_data, hist = False, kde = True,
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\distributions.py:2511: FutureWarning: 
+
+`shade` is now deprecated in favor of `fill`; setting `fill=True`.
+This will become an error in seaborn v0.14.0; please update your code.
+
+  kdeplot(**{axis: a}, ax=ax, color=kde_color, **kde_kws)
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(vector):
+C:\Users\anish\anaconda3\Lib\site-packages\seaborn\_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
+  with pd.option_context('mode.use_inf_as_na', True):
+<Axes: ylabel='Density'>
+
+Yeo-Johnson Transform
+tf = transformation.YeoJohnsonTransformer(variables = 'Planned_Shipment_Time')
+​
+edu_tf = tf.fit_transform(data)
+​
+prob = stats.probplot(edu_tf.Planned_Shipment_Time, dist = stats.norm, plot = pylab)
+​
+
+tf = transformation.YeoJohnsonTransformer(variables = 'Planned_Delivery_Time')
+​
+edu_tf = tf.fit_transform(data)
+​
+prob = stats.probplot(edu_tf.Planned_Delivery_Time, dist = stats.norm, plot = pylab)
+​
+
+tf = transformation.YeoJohnsonTransformer(variables = 'Month')
+​
+edu_tf = tf.fit_transform(data)
+​
+prob = stats.probplot(edu_tf.Month, dist = stats.norm, plot = pylab)
+​
+
+tf = transformation.YeoJohnsonTransformer(variables = 'Carrier_Num')
+​
+edu_tf = tf.fit_transform(data)
+​
+prob = stats.probplot(edu_tf.Carrier_Num, dist = stats.norm, plot = pylab)
+​
+
+Auto EDA
+Sweetviz
+# pip install sweetviz
+import sweetviz as sv
+s = sv.analyze(data)
+s.show_html()
+Done! Use 'show' commands to display/save.
+[100%] 00:01 -> (00:00 left)
+C:\Users\anish\anaconda3\Lib\site-packages\sweetviz\from_profiling_pandas.py:65: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(keys):
+C:\Users\anish\anaconda3\Lib\site-packages\sweetviz\from_profiling_pandas.py:65: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(keys):
+C:\Users\anish\anaconda3\Lib\site-packages\sweetviz\from_profiling_pandas.py:65: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(keys):
+C:\Users\anish\anaconda3\Lib\site-packages\sweetviz\from_profiling_pandas.py:65: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(keys):
+C:\Users\anish\anaconda3\Lib\site-packages\sweetviz\from_profiling_pandas.py:65: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(keys):
+C:\Users\anish\anaconda3\Lib\site-packages\sweetviz\from_profiling_pandas.py:65: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(keys):
+C:\Users\anish\anaconda3\Lib\site-packages\sweetviz\from_profiling_pandas.py:65: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(keys):
+C:\Users\anish\anaconda3\Lib\site-packages\sweetviz\from_profiling_pandas.py:65: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
+  if pd.api.types.is_categorical_dtype(keys):
+Report SWEETVIZ_REPORT.html was generated! NOTEBOOK/COLAB USERS: the web browser MAY not pop up, regardless, the report IS saved in your notebook/colab files.
+Dtale
+# pip install Dtale
+import dtale 
+data = pd.read_csv(r"C:\Users\anish\Documents\fedex.csv")
+d = dtale.show(data)
+d.open_browser()
+​
